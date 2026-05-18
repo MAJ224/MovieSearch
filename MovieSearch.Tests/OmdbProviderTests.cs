@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using MovieSearch.Core.Exceptions;
 using MovieSearch.Infrastructure.Providers.Omdb;
 using MovieSearchCore.DTOs;
 
@@ -180,10 +181,43 @@ public class OmdbProviderTests
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task SearchMoviesAsync_ThrowsProviderException_WhenResponseIsInvalidJson()
+    {
+        var provider = CreateProvider(_ => "not-json");
+
+        var exception = await Assert.ThrowsAsync<MovieProviderException>(() =>
+            provider.SearchMoviesAsync(
+                "batman",
+                new PaginationFilter { PageIndex = 1, PageSize = 10 }));
+
+        Assert.Equal("Movie provider returned invalid data.", exception.Message);
+    }
+
+    [Fact]
+    public async Task SearchMoviesAsync_ThrowsProviderException_WhenHttpRequestFails()
+    {
+        var provider = CreateProvider(
+            _ => "Server error",
+            HttpStatusCode.InternalServerError);
+
+        var exception = await Assert.ThrowsAsync<MovieProviderException>(() =>
+            provider.SearchMoviesAsync(
+                "batman",
+                new PaginationFilter { PageIndex = 1, PageSize = 10 }));
+
+        Assert.Equal("Movie provider returned HTTP 500.", exception.Message);
+    }
+
     private static OmdbProvider CreateProvider(Func<HttpRequestMessage, string> responseFactory)
+        => CreateProvider(responseFactory, HttpStatusCode.OK);
+
+    private static OmdbProvider CreateProvider(
+        Func<HttpRequestMessage, string> responseFactory,
+        HttpStatusCode statusCode)
     {
         var handler = new FakeHttpMessageHandler(request =>
-            new HttpResponseMessage(HttpStatusCode.OK)
+            new HttpResponseMessage(statusCode)
             {
                 Content = new StringContent(responseFactory(request), Encoding.UTF8, "application/json")
             });

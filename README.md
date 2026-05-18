@@ -71,6 +71,7 @@ dotnet test
 ```
 
 The provider tests do not call the real OMDb API. They use a fake `HttpMessageHandler` to test mapping, pagination, and not-found behavior.
+They also cover provider error handling for failed HTTP responses and invalid JSON.
 
 ## API
 
@@ -116,6 +117,7 @@ Query parameters:
 - `year`: optional release year from `1888` through the current year
 
 API routes are rate limited to 60 requests per minute. Invalid search types and out-of-range years are rejected before provider calls are made.
+If the movie provider fails, times out, returns a non-success HTTP status, or sends invalid data, the API returns a safe error response instead of exposing provider details.
 
 ### Get Movie Details
 

@@ -1,4 +1,5 @@
 using MovieSearch.Core.DTOs.Movie;
+using MovieSearch.Core.Exceptions;
 using MovieSearch.Core.Interfaces;
 using MovieSearch.Infrastructure;
 using MovieSearch.Infrastructure.Repository;
@@ -114,6 +115,36 @@ public class MovieRepositoryTests
         Assert.Equal("movie", provider.LastType);
     }
 
+    [Fact]
+    public async Task SearchAsync_ReturnsError_WhenProviderCallFails()
+    {
+        var provider = new AlphaProvider
+        {
+            SearchException = new MovieProviderException("Provider failed.")
+        };
+        var repository = CreateRepository(provider);
+
+        var result = await repository.SearchAsync("batman", new PaginationFilter());
+
+        Assert.Equal(ResponseType.Error, result.ResponseType);
+        Assert.Equal("Movie provider is temporarily unavailable.", result.Message);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsError_WhenProviderCallFails()
+    {
+        var provider = new AlphaProvider
+        {
+            DetailsException = new MovieProviderException("Provider failed.")
+        };
+        var repository = CreateRepository(provider);
+
+        var result = await repository.GetByIdAsync("tt0372784");
+
+        Assert.Equal(ResponseType.Error, result.ResponseType);
+        Assert.Equal("Movie provider is temporarily unavailable.", result.Message);
+    }
+
     private static MovieRepository CreateRepository(params IMovieProvider[] providers) =>
         new(providers, new InMemoryMovieSearchCache());
 
@@ -125,6 +156,8 @@ public class MovieRepositoryTests
     {
         public int SearchCallCount { get; private set; }
         public string? LastType { get; private set; }
+        public Exception? SearchException { get; init; }
+        public Exception? DetailsException { get; init; }
 
         public Task<PaginatedList<MovieSearchResult>> SearchMoviesAsync(
             string query,
@@ -136,13 +169,25 @@ public class MovieRepositoryTests
             SearchCallCount++;
             LastType = type;
 
+            if (SearchException is not null)
+            {
+                throw SearchException;
+            }
+
             return Task.FromResult(new PaginatedList<MovieSearchResult>(
                 [new MovieSearchResult { Title = GetType().Name }],
                 filter,
                 1));
         }
 
-        public Task<MovieDetails?> GetMovieDetailsAsync(string id, CancellationToken cancellationToken = default) =>
-            Task.FromResult<MovieDetails?>(null);
+        public Task<MovieDetails?> GetMovieDetailsAsync(string id, CancellationToken cancellationToken = default)
+        {
+            if (DetailsException is not null)
+            {
+                throw DetailsException;
+            }
+
+            return Task.FromResult<MovieDetails?>(null);
+        }
     }
 }

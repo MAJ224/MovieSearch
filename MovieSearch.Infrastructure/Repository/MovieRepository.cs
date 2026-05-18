@@ -1,3 +1,4 @@
+using MovieSearch.Core.Exceptions;
 using MovieSearch.Core.DTOs.Movie;
 using MovieSearch.Core.Interfaces;
 using MovieSearchCore.DTOs;
@@ -73,12 +74,33 @@ namespace MovieSearch.Infrastructure.Repository
 
             filter ??= new PaginationFilter();
 
-            var movies = await movieProvider.SearchMoviesAsync(
-                trimmedQuery,
-                filter,
-                normalizedType,
-                year,
-                cancellationToken);
+            PaginatedList<MovieSearchResult> movies;
+
+            try
+            {
+                movies = await movieProvider.SearchMoviesAsync(
+                    trimmedQuery,
+                    filter,
+                    normalizedType,
+                    year,
+                    cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (MovieProviderException)
+            {
+                return new Response<PaginatedList<MovieSearchResult>>(
+                    messageType: ResponseType.Error,
+                    message: "Movie provider is temporarily unavailable.");
+            }
+            catch (Exception)
+            {
+                return new Response<PaginatedList<MovieSearchResult>>(
+                    messageType: ResponseType.Error,
+                    message: "Something went wrong while searching movies.");
+            }
 
             _movieSearchCache.Set(trimmedQuery, movies);
 
@@ -106,7 +128,28 @@ namespace MovieSearch.Infrastructure.Repository
                     message: "Provider is not available.");
             }
 
-            var movie = await movieProvider.GetMovieDetailsAsync(id.Trim(), cancellationToken);
+            MovieDetails? movie;
+
+            try
+            {
+                movie = await movieProvider.GetMovieDetailsAsync(id.Trim(), cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (MovieProviderException)
+            {
+                return new Response<MovieDetails>(
+                    messageType: ResponseType.Error,
+                    message: "Movie provider is temporarily unavailable.");
+            }
+            catch (Exception)
+            {
+                return new Response<MovieDetails>(
+                    messageType: ResponseType.Error,
+                    message: "Something went wrong while loading movie details.");
+            }
 
             if (movie is null)
             {
