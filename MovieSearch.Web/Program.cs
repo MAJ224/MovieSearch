@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using MovieSearch.Core.Interfaces;
 using MovieSearch.Infrastructure;
 using MovieSearch.Infrastructure.Repository;
@@ -12,6 +14,17 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddSwaggerGen();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("api", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 60;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueLimit = 0;
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+});
 
 builder.Services.AddSingleton<IMovieSearchCache, InMemoryMovieSearchCache>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
@@ -50,8 +63,10 @@ app.UseStaticFiles();
 
 app.UseHttpsRedirection();
 
+app.UseRateLimiter();
+
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("api");
 
 app.Run();
