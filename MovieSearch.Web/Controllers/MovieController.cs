@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MovieSearch.Core.DTOs.Movie;
 using MovieSearch.Core.Interfaces;
-using MovieSearch.Infrastracture.Providers;
+using MovieSearch.Infrastracture;
 using MovieSearchCore.DTOs;
 using MovieSearchCore.DTOs.Responses;
 using MovieSearchCore.Enums;
