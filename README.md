@@ -125,7 +125,7 @@ Returns full movie details, including ratings.
 
 ## Provider Resolution
 
-`ProviderHelper` reads the registered `IMovieProvider` instances, lists their provider class names, and resolves the requested provider by class name. If no provider is supplied, the first registered provider ordered by class name is used.
+`MovieRepository` reads the registered `IMovieProvider` instances, lists their provider class names, and resolves the requested provider by class name. If no provider is supplied, the first registered provider ordered by class name is used.
 
 Current provider:
 
