@@ -2,7 +2,7 @@
 using MovieSearchCore.DTOs.Responses;
 using MovieSearchService.Controllers;
 
-namespace MovieSearch.web.Controllers
+namespace MovieSearch.Web.Controllers
 {
     [Route("api/[controller]")]
     public class HealthController : ApiControllerBase

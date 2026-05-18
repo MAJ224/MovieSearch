@@ -2,5 +2,5 @@
   <Project Path="MovieSearch.Core/MovieSearch.Core.csproj" />
   <Project Path="MovieSearch.Infrastracture/MovieSearch.Infrastracture.csproj" />
   <Project Path="MovieSearch.Tests/MovieSearch.Tests.csproj" />
-  <Project Path="MovieSearch.web/MovieSearch.web.csproj" />
+  <Project Path="MovieSearch.Web/MovieSearch.Web.csproj" />
 </Solution>

@@ -7,7 +7,7 @@ using MovieSearchCore.DTOs.Responses;
 using MovieSearchCore.Enums;
 using MovieSearchService.Controllers;
 
-namespace MovieSearch.web.Controllers
+namespace MovieSearch.Web.Controllers
 {
     [Route("api/[controller]")]
     public class MovieController(IMovieProvider movieProvider) : ApiControllerBase
