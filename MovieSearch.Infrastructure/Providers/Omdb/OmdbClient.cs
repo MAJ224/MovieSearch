@@ -1,8 +1,8 @@
-﻿using MovieSearch.Infrastracture.Providers.Omdb.Requests;
-using MovieSearch.Infrastracture.Providers.Omdb.Responses;
+﻿using MovieSearch.Infrastructure.Providers.Omdb.Requests;
+using MovieSearch.Infrastructure.Providers.Omdb.Responses;
 using System.Net.Http.Json;
 
-namespace MovieSearch.Infrastracture.Providers.Omdb
+namespace MovieSearch.Infrastructure.Providers.Omdb
 {
     public class OmdbClient(HttpClient httpClient, string apiKey)
     {

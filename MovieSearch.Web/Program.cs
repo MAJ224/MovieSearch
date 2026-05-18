@@ -1,5 +1,5 @@
 using MovieSearch.Core.Interfaces;
-using MovieSearch.Infrastracture.Providers.Omdb;
+using MovieSearch.Infrastructure.Providers.Omdb;
 
 var builder = WebApplication.CreateBuilder(args);
 

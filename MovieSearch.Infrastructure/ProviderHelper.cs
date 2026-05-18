@@ -1,7 +1,7 @@
 using System.Reflection;
 using MovieSearch.Core.Interfaces;
 
-namespace MovieSearch.Infrastracture
+namespace MovieSearch.Infrastructure
 {
     public static class ProviderHelper
     {

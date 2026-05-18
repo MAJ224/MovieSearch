@@ -16,7 +16,7 @@ It includes:
 MovieSearch.Core
   DTOs, pagination models, response wrapper, IMovieProvider
 
-MovieSearch.Infrastracture
+MovieSearch.Infrastructure
   OMDb client/provider and provider discovery helper
 
 MovieSearch.Web

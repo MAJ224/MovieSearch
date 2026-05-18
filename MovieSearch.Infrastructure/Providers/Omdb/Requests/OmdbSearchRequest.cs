@@ -1,4 +1,4 @@
-﻿namespace MovieSearch.Infrastracture.Providers.Omdb.Requests
+﻿namespace MovieSearch.Infrastructure.Providers.Omdb.Requests
 {
     internal class OmdbSearchRequest
     {

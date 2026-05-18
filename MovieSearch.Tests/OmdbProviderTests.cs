@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using MovieSearch.Infrastracture.Providers.Omdb;
+using MovieSearch.Infrastructure.Providers.Omdb;
 using MovieSearchCore.DTOs;
 
 namespace MovieSearch.Tests;

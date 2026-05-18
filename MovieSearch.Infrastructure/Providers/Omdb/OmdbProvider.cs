@@ -1,12 +1,12 @@
 using MovieSearch.Core.DTOs.Movie;
 using MovieSearch.Core.Interfaces;
-using MovieSearch.Infrastracture.Providers.Omdb;
-using MovieSearch.Infrastracture.Providers.Omdb.Requests;
-using MovieSearch.Infrastracture.Providers.Omdb.Responses;
+using MovieSearch.Infrastructure.Providers.Omdb;
+using MovieSearch.Infrastructure.Providers.Omdb.Requests;
+using MovieSearch.Infrastructure.Providers.Omdb.Responses;
 using MovieSearchCore.DTOs;
 using System.Globalization;
 
-namespace MovieSearch.Infrastracture.Providers.Omdb
+namespace MovieSearch.Infrastructure.Providers.Omdb
 {
     public class OmdbProvider(OmdbClient client) : IMovieProvider
     {
