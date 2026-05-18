@@ -5,7 +5,7 @@ using MovieSearchService.Controllers;
 namespace MovieSearch.web.Controllers
 {
     [Route("api/[controller]")]
-    public class Health : ApiControllerBase
+    public class HealthController : ApiControllerBase
     {
         [HttpGet("[action]")]
         public async Task<IActionResult> GetHealth()
