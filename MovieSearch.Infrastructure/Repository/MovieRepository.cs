@@ -10,6 +10,15 @@ namespace MovieSearch.Infrastructure.Repository
         IEnumerable<IMovieProvider> movieProviders,
         IMovieSearchCache movieSearchCache) : IMovieRepository
     {
+        private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "movie",
+            "series",
+            "episode"
+        };
+
+        private const int FirstMovieYear = 1888;
+
         private readonly IEnumerable<IMovieProvider> _movieProviders = movieProviders;
         private readonly IMovieSearchCache _movieSearchCache = movieSearchCache;
 
@@ -32,6 +41,21 @@ namespace MovieSearch.Infrastructure.Repository
             }
 
             var trimmedQuery = query.Trim();
+            var normalizedType = NormalizeType(type);
+
+            if (!IsValidType(normalizedType))
+            {
+                return new Response<PaginatedList<MovieSearchResult>>(
+                    messageType: ResponseType.Error,
+                    message: "Type must be movie, series, or episode.");
+            }
+
+            if (!IsValidYear(year))
+            {
+                return new Response<PaginatedList<MovieSearchResult>>(
+                    messageType: ResponseType.Error,
+                    message: $"Year must be between {FirstMovieYear} and {DateTime.UtcNow.Year}.");
+            }
 
             if (_movieSearchCache.TryGet(trimmedQuery, out var cachedMovies))
             {
@@ -52,7 +76,7 @@ namespace MovieSearch.Infrastructure.Repository
             var movies = await movieProvider.SearchMoviesAsync(
                 trimmedQuery,
                 filter,
-                type,
+                normalizedType,
                 year,
                 cancellationToken);
 
@@ -117,5 +141,14 @@ namespace MovieSearch.Infrastructure.Repository
             return availableProviders.FirstOrDefault(availableProvider =>
                 availableProvider.GetType().Name.Equals(provider.Trim(), StringComparison.OrdinalIgnoreCase));
         }
+
+        private static string? NormalizeType(string? type) =>
+            string.IsNullOrWhiteSpace(type) ? null : type.Trim().ToLowerInvariant();
+
+        private static bool IsValidType(string? type) =>
+            type is null || AllowedTypes.Contains(type);
+
+        private static bool IsValidYear(int? year) =>
+            year is null || year is >= FirstMovieYear && year <= DateTime.UtcNow.Year;
     }
 }

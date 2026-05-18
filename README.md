@@ -112,8 +112,10 @@ Query parameters:
 - `provider`: provider class name from `/api/movie/providers`
 - `pageIndex`: page number, defaults to `1`
 - `pageSize`: page size, defaults to `10`
-- `type`: optional OMDb type, such as `movie`, `series`, or `episode`
-- `year`: optional release year
+- `type`: optional OMDb type: `movie`, `series`, or `episode`
+- `year`: optional release year from `1888` through the current year
+
+API routes are rate limited to 60 requests per minute. Invalid search types and out-of-range years are rejected before provider calls are made.
 
 ### Get Movie Details
 

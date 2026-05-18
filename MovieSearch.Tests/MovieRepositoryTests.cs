@@ -67,6 +67,53 @@ public class MovieRepositoryTests
         Assert.Equal("Provider is not available.", result.Message);
     }
 
+    [Fact]
+    public async Task SearchAsync_ReturnsError_WhenTypeIsNotAllowed()
+    {
+        var provider = new AlphaProvider();
+        var repository = CreateRepository(provider);
+
+        var result = await repository.SearchAsync(
+            "batman",
+            new PaginationFilter(),
+            type: "documentary");
+
+        Assert.Equal(ResponseType.Error, result.ResponseType);
+        Assert.Equal("Type must be movie, series, or episode.", result.Message);
+        Assert.Equal(0, provider.SearchCallCount);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ReturnsError_WhenYearIsOutOfRange()
+    {
+        var provider = new AlphaProvider();
+        var repository = CreateRepository(provider);
+
+        var result = await repository.SearchAsync(
+            "batman",
+            new PaginationFilter(),
+            year: DateTime.UtcNow.Year + 1);
+
+        Assert.Equal(ResponseType.Error, result.ResponseType);
+        Assert.Equal($"Year must be between 1888 and {DateTime.UtcNow.Year}.", result.Message);
+        Assert.Equal(0, provider.SearchCallCount);
+    }
+
+    [Fact]
+    public async Task SearchAsync_TrimsAndNormalizesAllowedType()
+    {
+        var provider = new AlphaProvider();
+        var repository = CreateRepository(provider);
+
+        var result = await repository.SearchAsync(
+            "batman",
+            new PaginationFilter(),
+            type: " Movie ");
+
+        Assert.Equal(ResponseType.Success, result.ResponseType);
+        Assert.Equal("movie", provider.LastType);
+    }
+
     private static MovieRepository CreateRepository(params IMovieProvider[] providers) =>
         new(providers, new InMemoryMovieSearchCache());
 
@@ -77,6 +124,7 @@ public class MovieRepositoryTests
     private abstract class TestMovieProvider : IMovieProvider
     {
         public int SearchCallCount { get; private set; }
+        public string? LastType { get; private set; }
 
         public Task<PaginatedList<MovieSearchResult>> SearchMoviesAsync(
             string query,
@@ -86,6 +134,7 @@ public class MovieRepositoryTests
             CancellationToken cancellationToken = default)
         {
             SearchCallCount++;
+            LastType = type;
 
             return Task.FromResult(new PaginatedList<MovieSearchResult>(
                 [new MovieSearchResult { Title = GetType().Name }],
