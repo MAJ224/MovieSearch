@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Movie Search</title>
+    <link rel="stylesheet" href="/css/movie-search.css" />
+</head>
+<body>
+    <main class="shell">
+        <div class="topbar">
+            <h1>Movie Search</h1>
+            <div id="status" class="status" aria-live="polite"></div>
+        </div>
+
+        <form id="searchForm" class="search-panel">
+            <label>
+                Search
+                <input id="query" name="query" type="search" value="batman" autocomplete="off" required />
+            </label>
+
+            <label>
+                Provider
+                <select id="provider" name="provider">
+                    <option value="">Loading</option>
+                </select>
+            </label>
+
+            <label>
+                Type
+                <select id="type" name="type">
+                    <option value="">All</option>
+                    <option value="movie">Movie</option>
+                    <option value="series">Series</option>
+                    <option value="episode">Episode</option>
+                </select>
+            </label>
+
+            <label>
+                Year
+                <input id="year" name="year" type="number" min="1888" max="2100" inputmode="numeric" />
+            </label>
+
+            <label>
+                Page size
+                <select id="pageSize" name="pageSize">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                </select>
+            </label>
+
+            <button id="searchButton" type="submit">Search</button>
+        </form>
+
+        <section class="layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Results</h2>
+                    <span id="resultCount" class="meta"></span>
+                </div>
+                <div id="results" class="results">
+                    <div class="empty">No results</div>
+                </div>
+                <div class="pager">
+                    <button id="prevPage" class="secondary" type="button" disabled>Prev</button>
+                    <span id="pageInfo" class="meta">Page 1</span>
+                    <button id="nextPage" class="secondary" type="button" disabled>Next</button>
+                </div>
+            </div>
+
+            <aside class="panel">
+                <div class="panel-header">
+                    <h2>Details</h2>
+                </div>
+                <div id="details" class="details">
+                    <div class="empty">Select a movie</div>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <script src="/js/movie-search.js"></script>
+</body>
+</html>
