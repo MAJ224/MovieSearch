@@ -6,7 +6,6 @@ using MovieSearchCore.Enums;
 namespace MovieSearchService.Controllers
 {
     [ApiController]
-    //[Authorize]
     public abstract class ApiControllerBase : ControllerBase
     {
         protected IActionResult SendResponse<T>(Response<T> response) => response.ResponseType switch
