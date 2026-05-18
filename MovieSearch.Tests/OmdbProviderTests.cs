@@ -121,6 +121,73 @@ public class OmdbProviderTests
     }
 
     [Fact]
+    public async Task SearchMoviesAsync_TrimsAndNormalizesAllowedType_WhenCreatingOmdbRequest()
+    {
+        string? requestedType = null;
+
+        var provider = CreateProvider(request =>
+        {
+            requestedType = GetQueryValue(request.RequestUri!, "type");
+
+            return SearchResponse(1, [new SearchMovie("tt0372784", "Batman Begins", "2005")]);
+        });
+
+        var result = await provider.SearchMoviesAsync(
+            "batman",
+            new PaginationFilter { PageIndex = 1, PageSize = 10 },
+            " Movie ");
+
+        Assert.Single(result.Items);
+        Assert.Equal("movie", requestedType);
+    }
+
+    [Fact]
+    public async Task SearchMoviesAsync_ThrowsValidationException_WhenTypeIsNotAllowed()
+    {
+        var provider = CreateProvider(_ => throw new InvalidOperationException("HTTP should not be called."));
+
+        var exception = await Assert.ThrowsAsync<MovieProviderValidationException>(() =>
+            provider.SearchMoviesAsync(
+                "batman",
+                new PaginationFilter { PageIndex = 1, PageSize = 10 },
+                "documentary"));
+
+        Assert.Equal("Type must be movie, series, or episode.", exception.Message);
+    }
+
+    [Fact]
+    public async Task SearchMoviesAsync_ThrowsValidationException_WhenYearIsOutOfRange()
+    {
+        var provider = CreateProvider(_ => throw new InvalidOperationException("HTTP should not be called."));
+
+        var exception = await Assert.ThrowsAsync<MovieProviderValidationException>(() =>
+            provider.SearchMoviesAsync(
+                "batman",
+                new PaginationFilter { PageIndex = 1, PageSize = 10 },
+                year: DateTime.UtcNow.Year + 1));
+
+        Assert.Equal($"Year must be between 1888 and {DateTime.UtcNow.Year}.", exception.Message);
+    }
+
+    [Fact]
+    public async Task SearchMoviesAsync_DoesNotSendBlankTypeToOmdb()
+    {
+        var provider = CreateProvider(request =>
+        {
+            Assert.Null(GetQueryValue(request.RequestUri!, "type"));
+
+            return SearchResponse(1, [new SearchMovie("tt0372784", "Batman Begins", "2005")]);
+        });
+
+        var result = await provider.SearchMoviesAsync(
+            "batman",
+            new PaginationFilter { PageIndex = 1, PageSize = 10 },
+            " ");
+
+        Assert.Single(result.Items);
+    }
+
+    [Fact]
     public async Task GetMovieDetailsAsync_MapsDetailsAndRatings()
     {
         var provider = CreateProvider(_ => JsonSerializer.Serialize(new
@@ -261,14 +328,22 @@ public class OmdbProviderTests
 
     private static int GetQueryInt(Uri uri, string name)
     {
-        var value = uri.Query
+        var value = GetQueryValue(uri, name)
+            ?? throw new InvalidOperationException($"Query string value '{name}' was not found.");
+
+        return int.Parse(value, CultureInfo.InvariantCulture);
+    }
+
+    private static string? GetQueryValue(Uri uri, string name)
+    {
+        return uri.Query
             .TrimStart('?')
             .Split('&', StringSplitOptions.RemoveEmptyEntries)
             .Select(part => part.Split('=', 2))
             .Where(parts => parts.Length == 2)
-            .First(parts => Uri.UnescapeDataString(parts[0]) == name)[1];
-
-        return int.Parse(Uri.UnescapeDataString(value), CultureInfo.InvariantCulture);
+            .Where(parts => Uri.UnescapeDataString(parts[0]) == name)
+            .Select(parts => Uri.UnescapeDataString(parts[1]))
+            .FirstOrDefault();
     }
 
     private sealed record SearchMovie(string ImdbId, string Title, string Year);

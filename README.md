@@ -116,7 +116,7 @@ Query parameters:
 - `type`: optional OMDb type: `movie`, `series`, or `episode`
 - `year`: optional release year from `1888` through the current year
 
-API routes are rate limited to 60 requests per minute. Invalid search types and out-of-range years are rejected before provider calls are made.
+API routes are rate limited using the `RateLimiting:Api` settings in `appsettings.json`. Invalid search types and out-of-range years are rejected before provider calls are made.
 If the movie provider fails, times out, returns a non-success HTTP status, or sends invalid data, the API returns a safe error response instead of exposing provider details.
 
 ### Get Movie Details

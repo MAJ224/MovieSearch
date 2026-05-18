@@ -69,53 +69,6 @@ public class MovieRepositoryTests
     }
 
     [Fact]
-    public async Task SearchAsync_ReturnsError_WhenTypeIsNotAllowed()
-    {
-        var provider = new AlphaProvider();
-        var repository = CreateRepository(provider);
-
-        var result = await repository.SearchAsync(
-            "batman",
-            new PaginationFilter(),
-            type: "documentary");
-
-        Assert.Equal(ResponseType.Error, result.ResponseType);
-        Assert.Equal("Type must be movie, series, or episode.", result.Message);
-        Assert.Equal(0, provider.SearchCallCount);
-    }
-
-    [Fact]
-    public async Task SearchAsync_ReturnsError_WhenYearIsOutOfRange()
-    {
-        var provider = new AlphaProvider();
-        var repository = CreateRepository(provider);
-
-        var result = await repository.SearchAsync(
-            "batman",
-            new PaginationFilter(),
-            year: DateTime.UtcNow.Year + 1);
-
-        Assert.Equal(ResponseType.Error, result.ResponseType);
-        Assert.Equal($"Year must be between 1888 and {DateTime.UtcNow.Year}.", result.Message);
-        Assert.Equal(0, provider.SearchCallCount);
-    }
-
-    [Fact]
-    public async Task SearchAsync_TrimsAndNormalizesAllowedType()
-    {
-        var provider = new AlphaProvider();
-        var repository = CreateRepository(provider);
-
-        var result = await repository.SearchAsync(
-            "batman",
-            new PaginationFilter(),
-            type: " Movie ");
-
-        Assert.Equal(ResponseType.Success, result.ResponseType);
-        Assert.Equal("movie", provider.LastType);
-    }
-
-    [Fact]
     public async Task SearchAsync_ReturnsError_WhenProviderCallFails()
     {
         var provider = new AlphaProvider
@@ -128,6 +81,21 @@ public class MovieRepositoryTests
 
         Assert.Equal(ResponseType.Error, result.ResponseType);
         Assert.Equal("Movie provider is temporarily unavailable.", result.Message);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ReturnsError_WhenProviderValidationFails()
+    {
+        var provider = new AlphaProvider
+        {
+            SearchException = new MovieProviderValidationException("Provider validation failed.")
+        };
+        var repository = CreateRepository(provider);
+
+        var result = await repository.SearchAsync("batman", new PaginationFilter());
+
+        Assert.Equal(ResponseType.Error, result.ResponseType);
+        Assert.Equal("Provider validation failed.", result.Message);
     }
 
     [Fact]

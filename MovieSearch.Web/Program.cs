@@ -8,6 +8,12 @@ using MovieSearch.Infrastructure.Providers.Omdb;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+var apiRateLimitPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:Api:PermitLimit")
+    ?? throw new InvalidOperationException("RateLimiting:Api:PermitLimit is not set in appsettings.");
+var apiRateLimitWindowSeconds = builder.Configuration.GetValue<int?>("RateLimiting:Api:WindowSeconds")
+    ?? throw new InvalidOperationException("RateLimiting:Api:WindowSeconds is not set in appsettings.");
+var apiRateLimitQueueLimit = builder.Configuration.GetValue<int?>("RateLimiting:Api:QueueLimit")
+    ?? throw new InvalidOperationException("RateLimiting:Api:QueueLimit is not set in appsettings.");
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -19,9 +25,9 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddFixedWindowLimiter("api", limiterOptions =>
     {
-        limiterOptions.PermitLimit = 60;
-        limiterOptions.Window = TimeSpan.FromMinutes(1);
-        limiterOptions.QueueLimit = 0;
+        limiterOptions.PermitLimit = apiRateLimitPermitLimit;
+        limiterOptions.Window = TimeSpan.FromSeconds(apiRateLimitWindowSeconds);
+        limiterOptions.QueueLimit = apiRateLimitQueueLimit;
         limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 });

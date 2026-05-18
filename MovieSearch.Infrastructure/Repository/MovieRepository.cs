@@ -11,15 +11,6 @@ namespace MovieSearch.Infrastructure.Repository
         IEnumerable<IMovieProvider> movieProviders,
         IMovieSearchCache movieSearchCache) : IMovieRepository
     {
-        private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "movie",
-            "series",
-            "episode"
-        };
-
-        private const int FirstMovieYear = 1888;
-
         private readonly IEnumerable<IMovieProvider> _movieProviders = movieProviders;
         private readonly IMovieSearchCache _movieSearchCache = movieSearchCache;
 
@@ -42,27 +33,6 @@ namespace MovieSearch.Infrastructure.Repository
             }
 
             var trimmedQuery = query.Trim();
-            var normalizedType = NormalizeType(type);
-
-            if (!IsValidType(normalizedType))
-            {
-                return new Response<PaginatedList<MovieSearchResult>>(
-                    messageType: ResponseType.Error,
-                    message: "Type must be movie, series, or episode.");
-            }
-
-            if (!IsValidYear(year))
-            {
-                return new Response<PaginatedList<MovieSearchResult>>(
-                    messageType: ResponseType.Error,
-                    message: $"Year must be between {FirstMovieYear} and {DateTime.UtcNow.Year}.");
-            }
-
-            if (_movieSearchCache.TryGet(trimmedQuery, out var cachedMovies))
-            {
-                return new Response<PaginatedList<MovieSearchResult>>(cachedMovies);
-            }
-
             var movieProvider = ResolveProvider(provider);
 
             if (movieProvider is null)
@@ -70,6 +40,11 @@ namespace MovieSearch.Infrastructure.Repository
                 return new Response<PaginatedList<MovieSearchResult>>(
                     messageType: ResponseType.Error,
                     message: "Provider is not available.");
+            }
+
+            if (_movieSearchCache.TryGet(trimmedQuery, out var cachedMovies))
+            {
+                return new Response<PaginatedList<MovieSearchResult>>(cachedMovies);
             }
 
             filter ??= new PaginationFilter();
@@ -81,13 +56,19 @@ namespace MovieSearch.Infrastructure.Repository
                 movies = await movieProvider.SearchMoviesAsync(
                     trimmedQuery,
                     filter,
-                    normalizedType,
+                    type,
                     year,
                     cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
+            }
+            catch (MovieProviderValidationException exception)
+            {
+                return new Response<PaginatedList<MovieSearchResult>>(
+                    messageType: ResponseType.Error,
+                    message: exception.Message);
             }
             catch (MovieProviderException)
             {
@@ -184,14 +165,5 @@ namespace MovieSearch.Infrastructure.Repository
             return availableProviders.FirstOrDefault(availableProvider =>
                 availableProvider.GetType().Name.Equals(provider.Trim(), StringComparison.OrdinalIgnoreCase));
         }
-
-        private static string? NormalizeType(string? type) =>
-            string.IsNullOrWhiteSpace(type) ? null : type.Trim().ToLowerInvariant();
-
-        private static bool IsValidType(string? type) =>
-            type is null || AllowedTypes.Contains(type);
-
-        private static bool IsValidYear(int? year) =>
-            year is null || year is >= FirstMovieYear && year <= DateTime.UtcNow.Year;
     }
 }

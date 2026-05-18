@@ -1,4 +1,5 @@
 using MovieSearch.Core.DTOs.Movie;
+using MovieSearch.Core.Exceptions;
 using MovieSearch.Core.Interfaces;
 using MovieSearch.Infrastructure.Providers.Omdb;
 using MovieSearch.Infrastructure.Providers.Omdb.Requests;
@@ -10,7 +11,16 @@ namespace MovieSearch.Infrastructure.Providers.Omdb
 {
     public class OmdbProvider(OmdbClient client) : IMovieProvider
     {
+        private static readonly HashSet<string> SupportedMovieTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "movie",
+            "series",
+            "episode"
+        };
+
         private const int OmdbPageSize = 10;
+        private const int FirstMovieYear = 1888;
+
         private readonly OmdbClient _client = client;
 
         public async Task<PaginatedList<MovieSearchResult>> SearchMoviesAsync(
@@ -22,6 +32,9 @@ namespace MovieSearch.Infrastructure.Providers.Omdb
         {
             var items = new List<MovieSearchResult>();
             var totalCount = 0;
+            var normalizedType = NormalizeType(type);
+
+            ValidateSearchRequest(normalizedType, year);
 
             var startIndex = (filter.PageIndex - 1) * filter.PageSize;
             var OmdbPage = (startIndex / OmdbPageSize) + 1;
@@ -33,7 +46,7 @@ namespace MovieSearch.Infrastructure.Providers.Omdb
                     new OmdbSearchRequest
                     {
                         Query = query,
-                        Type = type,
+                        Type = normalizedType,
                         Year = year,
                         Page = OmdbPage
                     },
@@ -122,5 +135,22 @@ namespace MovieSearch.Infrastructure.Providers.Omdb
 
         private static bool IsSuccessful(string response) =>
             response.Equals("True", StringComparison.OrdinalIgnoreCase);
+
+        private static string? NormalizeType(string? type) =>
+            string.IsNullOrWhiteSpace(type) ? null : type.Trim().ToLowerInvariant();
+
+        private static void ValidateSearchRequest(string? type, int? year)
+        {
+            if (type is not null && !SupportedMovieTypes.Contains(type))
+            {
+                throw new MovieProviderValidationException("Type must be movie, series, or episode.");
+            }
+
+            if (year is not null && (year < FirstMovieYear || year > DateTime.UtcNow.Year))
+            {
+                throw new MovieProviderValidationException(
+                    $"Year must be between {FirstMovieYear} and {DateTime.UtcNow.Year}.");
+            }
+        }
     }
 }
