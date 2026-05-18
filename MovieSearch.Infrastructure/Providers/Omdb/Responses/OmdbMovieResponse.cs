@@ -1,4 +1,4 @@
-﻿namespace MovieSearch.Infrastracture.Providers.Omdb.Responses
+﻿namespace MovieSearch.Infrastructure.Providers.Omdb.Responses
 {
     internal class OmdbMovieResponse
     {

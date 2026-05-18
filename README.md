@@ -16,7 +16,7 @@ It includes:
 MovieSearch.Core
   DTOs, pagination models, response wrapper, IMovieProvider
 
-MovieSearch.Infrastracture
+MovieSearch.Infrastructure
   OMDb client/provider and provider discovery helper
 
 MovieSearch.Web
@@ -71,6 +71,7 @@ dotnet test
 ```
 
 The provider tests do not call the real OMDb API. They use a fake `HttpMessageHandler` to test mapping, pagination, and not-found behavior.
+They also cover provider error handling for failed HTTP responses and invalid JSON.
 
 ## API
 
@@ -112,8 +113,11 @@ Query parameters:
 - `provider`: provider class name from `/api/movie/providers`
 - `pageIndex`: page number, defaults to `1`
 - `pageSize`: page size, defaults to `10`
-- `type`: optional OMDb type, such as `movie`, `series`, or `episode`
-- `year`: optional release year
+- `type`: optional OMDb type: `movie`, `series`, or `episode`
+- `year`: optional release year from `1888` through the current year
+
+API routes are rate limited using the `RateLimiting:Api` settings in `appsettings.json`. Invalid search types and out-of-range years are rejected before provider calls are made.
+If the movie provider fails, times out, returns a non-success HTTP status, or sends invalid data, the API returns a safe error response instead of exposing provider details.
 
 ### Get Movie Details
 
@@ -123,18 +127,12 @@ GET /api/movie/tt0372784?provider=OmdbProvider
 
 Returns full movie details, including ratings.
 
-## Provider Discovery
+## Provider Resolution
 
-`ProviderHelper` scans loaded assemblies for concrete classes that implement `IMovieProvider`.
+`MovieRepository` reads the registered `IMovieProvider` instances, lists their provider class names, and resolves the requested provider by class name. If no provider is supplied, the first registered provider ordered by class name is used.
 
 Current provider:
 
 ```text
 OmdbProvider
 ```
-
-Note: the controller currently injects a single `IMovieProvider`. That works while there is only one provider. When adding more providers, switch the controller to use a provider resolver or inject `IEnumerable<IMovieProvider>` and select the provider by class name.
-
-## TODO
-
-- Update DI/provider resolution before adding more movie providers. The current setup injects a single `IMovieProvider`, so if multiple providers are registered, the app will resolve only one of them, typically the latest registered provider. Use a provider resolver or inject `IEnumerable<IMovieProvider>` instead.

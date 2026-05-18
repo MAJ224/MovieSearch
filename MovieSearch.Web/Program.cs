@@ -1,15 +1,39 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using MovieSearch.Core.Interfaces;
-using MovieSearch.Infrastracture.Providers.Omdb;
+using MovieSearch.Infrastructure;
+using MovieSearch.Infrastructure.Repository;
+using MovieSearch.Infrastructure.Providers.Omdb;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+var apiRateLimitPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:Api:PermitLimit")
+    ?? throw new InvalidOperationException("RateLimiting:Api:PermitLimit is not set in appsettings.");
+var apiRateLimitWindowSeconds = builder.Configuration.GetValue<int?>("RateLimiting:Api:WindowSeconds")
+    ?? throw new InvalidOperationException("RateLimiting:Api:WindowSeconds is not set in appsettings.");
+var apiRateLimitQueueLimit = builder.Configuration.GetValue<int?>("RateLimiting:Api:QueueLimit")
+    ?? throw new InvalidOperationException("RateLimiting:Api:QueueLimit is not set in appsettings.");
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 builder.Services.AddSwaggerGen();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("api", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = apiRateLimitPermitLimit;
+        limiterOptions.Window = TimeSpan.FromSeconds(apiRateLimitWindowSeconds);
+        limiterOptions.QueueLimit = apiRateLimitQueueLimit;
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+});
+
+builder.Services.AddSingleton<IMovieSearchCache, InMemoryMovieSearchCache>();
+builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 
 #region Omdb configuration
 
@@ -45,8 +69,10 @@ app.UseStaticFiles();
 
 app.UseHttpsRedirection();
 
+app.UseRateLimiter();
+
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("api");
 
 app.Run();
