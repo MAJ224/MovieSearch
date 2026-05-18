@@ -10,9 +10,12 @@ using MovieSearchService.Controllers;
 namespace MovieSearch.Web.Controllers
 {
     [Route("api/[controller]")]
-    public class MovieController(IEnumerable<IMovieProvider> movieProviders) : ApiControllerBase
+    public class MovieController(
+        IEnumerable<IMovieProvider> movieProviders,
+        IMovieSearchCache movieSearchCache) : ApiControllerBase
     {
         private readonly IEnumerable<IMovieProvider> _movieProviders = movieProviders;
+        private readonly IMovieSearchCache _movieSearchCache = movieSearchCache;
 
         [HttpGet("providers")]
         public IActionResult GetProviders()
@@ -34,6 +37,13 @@ namespace MovieSearch.Web.Controllers
                     message: "Query is required."));
             }
 
+            var trimmedQuery = query.Trim();
+
+            if (_movieSearchCache.TryGet(trimmedQuery, out var cachedMovies))
+            {
+                return SendResponse(new Response<PaginatedList<MovieSearchResult>>(cachedMovies));
+            }
+
             var movieProvider = ProviderHelper.ResolveProvider(_movieProviders, provider);
 
             if (movieProvider is null)
@@ -46,11 +56,13 @@ namespace MovieSearch.Web.Controllers
             filter ??= new PaginationFilter();
 
             var movies = await movieProvider.SearchMoviesAsync(
-                query.Trim(),
+                trimmedQuery,
                 filter,
                 type,
                 year,
                 cancellationToken);
+
+            _movieSearchCache.Set(trimmedQuery, movies);
 
             return SendResponse(new Response<PaginatedList<MovieSearchResult>>(movies));
         }
