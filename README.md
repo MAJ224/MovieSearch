@@ -134,3 +134,7 @@ OmdbProvider
 ```
 
 Note: the controller currently injects a single `IMovieProvider`. That works while there is only one provider. When adding more providers, switch the controller to use a provider resolver or inject `IEnumerable<IMovieProvider>` and select the provider by class name.
+
+## TODO
+
+- Update DI/provider resolution before adding more movie providers. The current setup injects a single `IMovieProvider`, so if multiple providers are registered, the app will resolve only one of them, typically the latest registered provider. Use a provider resolver or inject `IEnumerable<IMovieProvider>` instead.
