@@ -1,44 +1,31 @@
-using System.Reflection;
 using MovieSearch.Core.Interfaces;
 
 namespace MovieSearch.Infrastructure
 {
     public static class ProviderHelper
     {
-        public static IReadOnlyList<string> GetAvailableProviders()
+        public static IReadOnlyList<string> GetAvailableProviders(IEnumerable<IMovieProvider> providers)
         {
-            return AppDomain.CurrentDomain
-                .GetAssemblies()
-                .SelectMany(GetLoadableTypes)
-                .Where(type => typeof(IMovieProvider).IsAssignableFrom(type))
-                .Where(type => type is { IsClass: true, IsAbstract: false })
-                .Select(type => type.Name)
+            return providers
+                .Select(provider => provider.GetType().Name)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(providerName => providerName)
                 .ToList();
         }
 
-        public static bool IsAvailableProvider(string? provider)
+        public static IMovieProvider? ResolveProvider(IEnumerable<IMovieProvider> providers, string? provider)
         {
+            var availableProviders = providers
+                .OrderBy(provider => provider.GetType().Name)
+                .ToList();
+
             if (string.IsNullOrWhiteSpace(provider))
             {
-                return true;
+                return availableProviders.FirstOrDefault();
             }
 
-            return GetAvailableProviders().Any(availableProvider =>
-                availableProvider.Equals(provider.Trim(), StringComparison.OrdinalIgnoreCase));
+            return availableProviders.FirstOrDefault(availableProvider =>
+                availableProvider.GetType().Name.Equals(provider.Trim(), StringComparison.OrdinalIgnoreCase));
         }
-
-        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException exception)
-            {
-                return exception.Types.Where(type => type is not null)!;
-            }
-        }
-
     }
 }

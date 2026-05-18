@@ -123,18 +123,12 @@ GET /api/movie/tt0372784?provider=OmdbProvider
 
 Returns full movie details, including ratings.
 
-## Provider Discovery
+## Provider Resolution
 
-`ProviderHelper` scans loaded assemblies for concrete classes that implement `IMovieProvider`.
+`ProviderHelper` reads the registered `IMovieProvider` instances, lists their provider class names, and resolves the requested provider by class name. If no provider is supplied, the first registered provider ordered by class name is used.
 
 Current provider:
 
 ```text
 OmdbProvider
 ```
-
-Note: the controller currently injects a single `IMovieProvider`. That works while there is only one provider. When adding more providers, switch the controller to use a provider resolver or inject `IEnumerable<IMovieProvider>` and select the provider by class name.
-
-## TODO
-
-- Update DI/provider resolution before adding more movie providers. The current setup injects a single `IMovieProvider`, so if multiple providers are registered, the app will resolve only one of them, typically the latest registered provider. Use a provider resolver or inject `IEnumerable<IMovieProvider>` instead.

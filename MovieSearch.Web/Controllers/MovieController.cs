@@ -10,13 +10,13 @@ using MovieSearchService.Controllers;
 namespace MovieSearch.Web.Controllers
 {
     [Route("api/[controller]")]
-    public class MovieController(IMovieProvider movieProvider) : ApiControllerBase
+    public class MovieController(IEnumerable<IMovieProvider> movieProviders) : ApiControllerBase
     {
-        private readonly IMovieProvider _movieProvider = movieProvider;
+        private readonly IEnumerable<IMovieProvider> _movieProviders = movieProviders;
 
         [HttpGet("providers")]
         public IActionResult GetProviders()
-            => SendResponse(new Response<IReadOnlyList<string>>(ProviderHelper.GetAvailableProviders()));
+            => SendResponse(new Response<IReadOnlyList<string>>(ProviderHelper.GetAvailableProviders(_movieProviders)));
 
         [HttpGet("search")]
         public async Task<IActionResult> Search(
@@ -34,7 +34,9 @@ namespace MovieSearch.Web.Controllers
                     message: "Query is required."));
             }
 
-            if (!ProviderHelper.IsAvailableProvider(provider))
+            var movieProvider = ProviderHelper.ResolveProvider(_movieProviders, provider);
+
+            if (movieProvider is null)
             {
                 return SendResponse(new Response<object>(
                     messageType: ResponseType.Error,
@@ -43,7 +45,7 @@ namespace MovieSearch.Web.Controllers
 
             filter ??= new PaginationFilter();
 
-            var movies = await _movieProvider.SearchMoviesAsync(
+            var movies = await movieProvider.SearchMoviesAsync(
                 query.Trim(),
                 filter,
                 type,
@@ -66,14 +68,16 @@ namespace MovieSearch.Web.Controllers
                     message: "IMDb id is required."));
             }
 
-            if (!ProviderHelper.IsAvailableProvider(provider))
+            var movieProvider = ProviderHelper.ResolveProvider(_movieProviders, provider);
+
+            if (movieProvider is null)
             {
                 return SendResponse(new Response<object>(
                     messageType: ResponseType.Error,
                     message: "Provider is not available."));
             }
 
-            var movie = await _movieProvider.GetMovieDetailsAsync(id.Trim(), cancellationToken);
+            var movie = await movieProvider.GetMovieDetailsAsync(id.Trim(), cancellationToken);
 
             if (movie is null)
             {
