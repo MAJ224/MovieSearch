@@ -1,10 +1,10 @@
-﻿namespace MovieSearchCore.DTOs
+namespace MovieSearchCore.DTOs
 {
     public class PaginatedList<T>
     {
         public PaginatedList(IEnumerable<T> source, PaginationFilter filter)
         {
-            source = source.Skip((filter.PageIndex - 1) * filter.PageSize).Take(filter.PageSize);
+            var items = source.ToList();
 
             if (!string.IsNullOrEmpty(filter.SortBy))
             {
@@ -13,25 +13,37 @@
                 {
                     if (filter.SortDirection.Equals("asc", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        source = source.OrderBy(e => propertyInfo.GetValue(e, null));
+                        items = items.OrderBy(e => propertyInfo.GetValue(e, null)).ToList();
                     }
                     else if (filter.SortDirection.Equals("desc", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        source = source.OrderByDescending(e => propertyInfo.GetValue(e, null));
+                        items = items.OrderByDescending(e => propertyInfo.GetValue(e, null)).ToList();
                     }
                 }
             }
 
-            Items = source;
+            TotalCount = items.Count;
+            Items = items.Skip((filter.PageIndex - 1) * filter.PageSize).Take(filter.PageSize);
             PageIndex = filter.PageIndex;
-            TotalPages = (int)Math.Ceiling(source.Count() / (double)filter.PageSize);
+            PageSize = filter.PageSize;
+            TotalPages = (int)Math.Ceiling(TotalCount / (double)filter.PageSize);
+        }
+
+        public PaginatedList(IEnumerable<T> items, PaginationFilter filter, int totalCount)
+        {
+            Items = items;
+            PageIndex = filter.PageIndex;
+            PageSize = filter.PageSize;
+            TotalCount = totalCount;
+            TotalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize);
         }
 
         public IEnumerable<T> Items { get; private set; }
         public int PageIndex { get; private set; }
+        public int PageSize { get; private set; }
+        public int TotalCount { get; private set; }
         public int TotalPages { get; private set; }
         public bool HasPreviousPage => PageIndex > 1;
         public bool HasNextPage => PageIndex < TotalPages;
-
     }
 }
